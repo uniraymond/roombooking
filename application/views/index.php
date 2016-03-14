@@ -1,7 +1,7 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');?>
 
 <div>
-    <?php echo validation_errors(); ?>
+    <div><?php echo validation_errors(); ?></div>
     <div id="validation_message"></div>
     <div>
         <?php echo form_open('book/addBook', array('id'=>'addnewbookform', 'onsubmit'=>'createBook();return false;')); ?>
@@ -152,6 +152,7 @@
         $('#booktimeFormDiv').removeClass('has-error');
         $('#booktimeFormDiv span.required').empty();
 
+        $('#validation_message').removeClass('bg-success bg-danger');
         $.ajax({
             url: "<?php echo site_url('book/addBook'); ?>",
             data: form_data,
@@ -166,12 +167,12 @@
                     $('#allusers').val('');
                     $('#user_id').val('');
 
-                    $('#validation_message').html('<h3>Room booked successful</h3>');
+                    $('#validation_message').removeClass('bg-danger').addClass('bg-success').html('<h3>Room booked successful</h3>');
                 } else if(data.timewrong) {
-                    $('#validation_message').html('<h3>Faild to book a room. The room has been booked and check the room time please</h3>');
+                    $('#validation_message').removeClass('bg-success').addClass('bg-danger').html('<h3>Faild to book a room. The room has been booked and check the room time please</h3>');
                     $('#booktimeFormDiv').addClass('has-error').append('<span class="required">This Room has been booked in your time</span>');
                 } else {
-                    $('#validation_message').html('<h3>Faild to book a room</h3>');
+                    $('#validation_message').removeClass('bg-success').addClass('bg-danger').html('<h3>Faild to book a room</h3>');
                     if ($('#rooms').val() == '') {
                         $('#roomFormDiv').addClass('has-error').append('<span class="required">* Field Required</span>');
                     }
@@ -185,6 +186,7 @@
     }
 
     var deleteBook = function(book_id) {
+        $('#validation_message').removeClass('bg-success bg-danger');
         if (confirm('Are you sure want to delet the booking?')) {
             $.ajax({
                 url: "<?php echo site_url('book/removeBook'); ?>",
@@ -193,10 +195,10 @@
                 type: "POST",
                 success: function(data) {
                     if (data.success) {
-                        $('#validation_message').html('<h3>A Room booking has been removed</h3>');
+                        $('#validation_message').removeClass('bg-danger').addClass('bg-success').html('<h3>A Room booking has been removed</h3>');
                         $('#book_id_'+book_id).remove();
                     } else {
-                        $('#validation_message').html('<h3>Cannot remove a room book</h3>');
+                        $('#validation_message').removeClass('bg-success').addClass('bg-danger').html('<h3>Cannot remove a room book</h3>');
                     }
                 }
             });

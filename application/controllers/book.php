@@ -11,10 +11,59 @@ class Book extends CI_Controller {
 		$this->load->model('book_model');
 		$this->load->helper('url');
 	}
-	public function index()
-	{
-		$this->load->view('booking');
-	}
+
+    public function index()
+    {
+        $this->load->helper(array('form'));
+        $this->load->library('form_validation');
+
+        $data['title'] = 'Room Booking';
+        //get users information
+        $users = $this->user_model->getAllUsers();
+        $u[0] = 'Select a user';
+        $allusers = '';
+        foreach ($users as $user) {
+            $u[$user->id] = $user->fname.' '.$user->lname;
+            $allusers .= '"'.$user->fname.' '.$user->lname.' - '.$user->student_id.'", ';
+        }
+
+        //get rooms information
+        $rooms = $this->room_model->getAllRooms();
+        $r[0] = 'Select a room';
+        foreach ($rooms as $room) {
+            $r[$room->id] = $room->room_name;
+            $o[$room->id] = $room->room_open_time;
+        }
+
+        //get books information
+        $allbooks = $this->book_model->getAllBooks();
+        $ab = array();
+        foreach ($allbooks as $book) {
+            $ab[] = array(
+                'id' => $book->id,
+                'user'=> $this->user_model->getUserFullnameStudentid($book->user_id),
+                'room'=> $this->room_model->getRoomNameLocationById($book->user_id),
+                'book_start' => $book->book_start_date_time,
+                'book_finish' => $book->book_finish_date_time,
+                'book_duration' => $book->book_duration
+            );
+        }
+
+        $data['users'] = $u;
+        $data['rooms'] = $r;
+        $data['open_hours'] = $o;
+        $data['allusers'] = $allusers;
+        $data['books'] = $ab;
+
+        $this->load->view('header', $data);
+
+        if ($this->form_validation->run() == False) {
+            $this->load->view('index', $data);
+        } else {
+            $this->load->view('formsuccess');
+        }
+        $this->load->view('footer');
+    }
 
 	public function load()
 	{
@@ -96,58 +145,6 @@ class Book extends CI_Controller {
         echo json_encode(array('bookUni'=>$roomMaxHour));
     }
 
-    public function booking()
-    {
-        $this->load->helper(array('form'));
-        $this->load->library('form_validation');
-
-        $data['title'] = 'Room Booking';
-        //get users information
-        $users = $this->user_model->getAllUsers();
-        $u[0] = 'Select a user';
-        $allusers = '';
-        foreach ($users as $user) {
-            $u[$user->id] = $user->fname.' '.$user->lname;
-            $allusers .= '"'.$user->fname.' '.$user->lname.' - '.$user->student_id.'", ';
-        }
-
-        //get rooms information
-        $rooms = $this->room_model->getAllRooms();
-        $r[0] = 'Select a room';
-        foreach ($rooms as $room) {
-            $r[$room->id] = $room->room_name;
-            $o[$room->id] = $room->room_open_time;
-        }
-
-        //get books information
-        $allbooks = $this->book_model->getAllBooks();
-        foreach ($allbooks as $book) {
-            $ab[] = array(
-                    'id' => $book->id,
-                    'user'=> $this->user_model->getUserFullnameStudentid($book->user_id),
-                    'room'=> $this->room_model->getRoomNameLocationById($book->user_id),
-                    'book_start' => $book->book_start_date_time,
-                    'book_finish' => $book->book_finish_date_time,
-                    'book_duration' => $book->book_duration
-                );
-        }
-
-        $data['users'] = $u;
-        $data['rooms'] = $r;
-        $data['open_hours'] = $o;
-        $data['allusers'] = $allusers;
-        $data['books'] = $ab;
-
-        $this->load->view('header', $data);
-
-        if ($this->form_validation->run() == False) {
-            $this->load->view('booking', $data);
-        } else {
-            $this->load->view('formsuccess');
-        }
-        $this->load->view('footer');
-    }
-
     public function addBook(){
         $this->load->helper(array('form', 'url'));
         $this->load->library('form_validation');
@@ -189,8 +186,8 @@ class Book extends CI_Controller {
                         'id' => $result->id,
                         'room' => $room_name,
                         'user' => $user_name,
-                        'book_start' => $result->book_start_date_time,
-                        'book_finish' => $result->book_finish_date_time,
+                        'book_start' => date('d-m-Y H:i:s', strtotime($result->book_start_date_time)),
+                        'book_finish' => date('d-m-Y H:i:s', strtotime($result->book_finish_date_time)),
                         'book_duration' => $result->book_duration,
                         'success' => true,
                         'faild' => false

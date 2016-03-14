@@ -1,3 +1,13 @@
-body {
+#validation_message {
+    padding: 1px;
+    margin: 10px 0;
+}
 
+#validation_message h3 {
+    margin-top: 10px;
+}
+
+#validation_message.bg-danger {
+    background-color: #FFD4D4;
+    color: red;
 }
