@@ -115,4 +115,11 @@ class Room_model extends CI_Model{
         }
         return $diff;
     }
+
+    public function getRoomNameLocationById($room_id){
+        $query = $this->db->query('SELECT * FROM room where id='.$room_id);
+
+        $row = $query->row();
+        return $row->room_name . ' (' . $row->room_location . ')';
+    }
 }

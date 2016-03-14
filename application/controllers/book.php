@@ -8,12 +8,11 @@ class Book extends CI_Controller {
 		parent::__construct();
 		$this->load->model('user_model');
 		$this->load->model('room_model');
-		$this->load->helper('url_helper');
+		$this->load->model('book_model');
+		$this->load->helper('url');
 	}
 	public function index()
 	{
-		$this->load->model('user_model');
-		var_dump($this->user_model->getAllUsers());
 		$this->load->view('booking');
 	}
 
@@ -103,6 +102,7 @@ class Book extends CI_Controller {
         $this->load->library('form_validation');
 
         $data['title'] = 'Room Booking';
+        //get users information
         $users = $this->user_model->getAllUsers();
         $u[0] = 'Select a user';
         $allusers = '';
@@ -111,6 +111,7 @@ class Book extends CI_Controller {
             $allusers .= '"'.$user->fname.' '.$user->lname.' - '.$user->student_id.'", ';
         }
 
+        //get rooms information
         $rooms = $this->room_model->getAllRooms();
         $r[0] = 'Select a room';
         foreach ($rooms as $room) {
@@ -118,13 +119,24 @@ class Book extends CI_Controller {
             $o[$room->id] = $room->room_open_time;
         }
 
+        //get books information
+        $allbooks = $this->book_model->getAllBooks();
+        foreach ($allbooks as $book) {
+            $ab[] = array(
+                    'id' => $book->id,
+                    'user'=> $this->user_model->getUserFullnameStudentid($book->user_id),
+                    'room'=> $this->room_model->getRoomNameLocationById($book->user_id),
+                    'book_start' => $book->book_start_date_time,
+                    'book_finish' => $book->book_finish_date_time,
+                    'book_duration' => $book->book_duration
+                );
+        }
+
         $data['users'] = $u;
         $data['rooms'] = $r;
         $data['open_hours'] = $o;
         $data['allusers'] = $allusers;
-
-        $this->form_validation->set_rules('user', 'user', 'required');
-        $this->form_validation->set_rules('room', 'room', 'required');
+        $data['books'] = $ab;
 
         $this->load->view('header', $data);
 
@@ -137,26 +149,69 @@ class Book extends CI_Controller {
     }
 
     public function addBook(){
+        $this->load->helper(array('form', 'url'));
+        $this->load->library('form_validation');
+        $this->form_validation->set_rules('user_id', 'User', 'required');
+        $this->form_validation->set_rules('room_id', 'Room', 'required');
+
         $bookdate = $this->input->post('bookdate');
         $booktime = $this->input->post('booktime');
-        $bookduration = $this->input->post('bookuni');
+        $room_id = $this->input->post('room_id');
         $book_start = new DateTime($bookdate.' '.$booktime);
-        $book_finish = $book_start;
 
-        $data = array(
-            'user_id' => $this->input->post('hideUser'),
-            'room_id' => $this->input->post('hideRoom'),
-            'book_start_date_time' =>  $book_start->format('Y-m-d H:i:s'),
-            //caculate finish time
-            'book_finish_date_time' => $book_finish->add(new DateInterval("PT{$bookduration}H"))->format('Y-m-d H:i:s'),
-            'book_duration' => $bookduration
-        );
-        $new_book_record = $this->db->insert('book', $data);
-        if ($new_book_record) {
-            $id = $this->db->insert_id();
-            $q = $this->db->get_where('book', array('id'=>$id));
-            echo json_encode($q->row());
+        if ($this->form_validation->run() == False) {
+            $bookresult = array('success'=>false, 'faild'=>true, 'timewrong'=>false);
+            echo json_encode($bookresult);
+        } else if($this->book_model->checkBookTime( $book_start->format('Y-m-d H:i:s'), $room_id)) {
+            $bookresult = array('success'=>false, 'faild'=>true, 'timewrong'=>true);
+            echo json_encode($bookresult);
+        } else {
+            //set up 1h as time default
+            $bookduration = $this->input->post('bookuni') ? $this->input->post('bookuni') : 1;
+            $book_finish = $book_start;
+
+            $data = array(
+                'user_id' => $this->input->post('user_id'),
+                'room_id' => $this->input->post('room_id'),
+                'book_start_date_time' =>  $book_start->format('Y-m-d H:i:s'),
+                //caculate finish time
+                'book_finish_date_time' => $book_finish->add(new DateInterval("PT{$bookduration}H"))->format('Y-m-d H:i:s'),
+                'book_duration' => $bookduration
+            );
+            $new_book_record = $this->db->insert('book', $data);
+            if ($new_book_record) {
+                $id = $this->db->insert_id();
+                $q = $this->db->get_where('book', array('id'=>$id));
+                $result = $q->row();
+                $room_name = $this->room_model->getRoomNameLocationById($result->room_id);
+                $user_name = $this->user_model->getUserFullnameStudentid($result->user_id);
+                $bookresult = array(
+                        'id' => $result->id,
+                        'room' => $room_name,
+                        'user' => $user_name,
+                        'book_start' => $result->book_start_date_time,
+                        'book_finish' => $result->book_finish_date_time,
+                        'book_duration' => $result->book_duration,
+                        'success' => true,
+                        'faild' => false
+                );
+                echo json_encode($bookresult);
+            }
         }
         return;
+    }
+
+    public function removeBook(){
+        $book_id = $this->input->post('book_id');
+        $bookresult = array('success'=>false, 'faild'=>true, 'book_id' => $book_id);
+        if ($book_id) {
+            if ($this->book_model->deleteBook($book_id)) {
+                $bookresult = array(
+                    'success' => true,
+                    'faild' => false
+                );
+            }
+        }
+        echo json_encode($bookresult);
     }
 }

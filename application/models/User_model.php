@@ -34,4 +34,11 @@ class User_model extends CI_Model {
 
         return $query->result();
     }
+
+    public function getUserFullnameStudentid($user_id){
+        $query = $this->db->query('SELECT * FROM user where id='.$user_id);
+
+        $row = $query->row();
+        return $row->fname . ' ' . $row->lname . ' (' . $row->student_id . ')';
+    }
 }
