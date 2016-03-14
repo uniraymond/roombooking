@@ -1,4 +1,5 @@
-<h1>Room Booking System<h1>
+Room Booking System
+
 This roombooking has been using Codeigniter3 as php server side
 jQuery, Bootstrap, and jQuery Ui have been used on frontend.
 
